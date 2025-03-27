@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Display App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: {{COLOR}};
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            font-size: 3em;
+            font-weight: bold;
+        }
+        p {
+            font-size: 1.5em;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        .date-time {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Color Display App</h1>
+    <p>The current background color is: <strong>{{COLOR}}</strong></p>
+
+    <div class="info">
+        <p>Welcome to Hilltop Consultancy Color Display Application.</p>
+        <p>Address: Sylen 3, Høje Taastrup, Copenhagen</p>
+        <p>Website: <a href="https://www.htconsult.dk" target="_blank" style="color: white;">www.htconsult.dk</a></p>
+        <p>Contact: +45 7157 3047</p>
+    </div>
+
+    <div class="date-time">
+        <p>Today is: <span id="current-date"></span></p>
+    </div>
+
+    <script>
+        // Get current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const formattedDate = now.toLocaleString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+            });
+            document.getElementById('current-date').textContent = formattedDate;
+        }
+
+        // Update date and time every second
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // Initial call to display date immediately
+    </script>
+</body>
+</html>
