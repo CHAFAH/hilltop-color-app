@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicolor-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: multicolor
+  template:
+    metadata:
+      labels:
+        app: multicolor
+    spec:
+      containers:
+      - name: multicolor-container
+        image: hilltopconsultancy/multicolor:greenv2.0
+        ports:
+        - containerPort: 8080

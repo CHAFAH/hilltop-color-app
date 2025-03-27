@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: multicolor-lb-svc
+spec:
+  selector:
+    app: multicolor
+  type: LoadBalancer
+  ports:
+  - name: tcp
+    port:  80
+    targetPort:  8080
