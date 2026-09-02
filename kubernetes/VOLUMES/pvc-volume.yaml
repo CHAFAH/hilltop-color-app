@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wandaprep-logs-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wandaprep-pvc-volume
+  labels:
+    app: wandaprep
+spec:
+  containers:
+  - name: wandaprep-container
+    image: chafah/wandaprep:v1.0
+    ports:
+    - containerPort: 8080
+    volumeMounts:
+    - name: logs-storage
+      mountPath: /usr/src/app/logs
+  volumes:
+  - name: logs-storage
+    persistentVolumeClaim:
+      claimName: wandaprep-logs-pvc
