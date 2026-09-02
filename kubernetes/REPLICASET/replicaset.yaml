@@ -1,7 +1,7 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: ReplicaSet
 metadata:
-  name: wandaprep-deployment
+  name: wandaprep-replicaset
 spec:
   replicas: 3
   selector:

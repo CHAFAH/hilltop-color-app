@@ -5,71 +5,58 @@ const path = require('path');
 const app = express();
 const PORT = 8080;
 
-// Get the background color from an environment variable (default: red)
-const backgroundColor = process.env.COLOR || 'red';
+// ── Values injected by Kubernetes ConfigMap and Secret ──────────────────────
+const APP_COLOR   = process.env.APP_COLOR   || 'red';
+const APP_ENV     = process.env.APP_ENV     || 'development';
+const APP_MESSAGE = process.env.APP_MESSAGE || 'Hello from WANDAPREP!';
+const SECRET_KEY  = process.env.SECRET_KEY  || 'not-set';
 
-// Ensure logs directory exists
+// ── Logging setup ────────────────────────────────────────────────────────────
 const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+
+const logStream = fs.createWriteStream(path.join(logsDir, 'app.log'), { flags: 'a' });
+
+function log(msg) {
+    console.log(msg);
+    logStream.write(msg + '\n');
 }
 
-// Logging setup
-const logFilePath = path.join(logsDir, 'app.log');
-const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
-
-const serverInfo = `
-==========================
-Hilltop Consultancy Color Display Application
-Address: Sylen 3, Høje Taastrup, Copenhagen
-Website: www.htconsult.dk
-Contact: +45 7157 3047
-==========================
-`;
-
-console.log(serverInfo);
-logStream.write(serverInfo + '\n');
-
-// Serve index.html dynamically
+// ── Routes ───────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
-    const timestamp = new Date().toISOString();
-    const userAgent = req.headers['user-agent'] || 'Unknown';
-    const remoteAddress = req.socket.remoteAddress;
-
-    // Read the HTML file
     fs.readFile(path.join(__dirname, 'index.html'), 'utf8', (err, data) => {
-        if (err) {
-            res.status(500).send('Internal Server Error');
-            return;
-        }
-
-        // Replace placeholders with actual values
-        const htmlContent = data.replace(/{{COLOR}}/g, backgroundColor);
-        res.send(htmlContent);
+        if (err) return res.status(500).send('Internal Server Error');
+        res.send(
+            data
+                .replace(/{{APP_COLOR}}/g,   APP_COLOR)
+                .replace(/{{APP_ENV}}/g,     APP_ENV)
+                .replace(/{{APP_MESSAGE}}/g, APP_MESSAGE)
+                .replace(/{{SECRET_KEY}}/g,  SECRET_KEY)
+        );
     });
 
-    // Log request details
-    const logMessage = `
-[${timestamp}] New Request:
-- Client IP: ${remoteAddress}
-- User-Agent: ${userAgent}
-- Background Color: ${backgroundColor}
-- Accessed Page: /
-==========================
-`;
-    console.log(logMessage);
-    logStream.write(logMessage + '\n');
+    log(`[${new Date().toISOString()}] [REQUEST] GET / — color=${APP_COLOR} env=${APP_ENV}`);
 });
 
-// Start the server
+// ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-    const startMessage = `
-[${new Date().toISOString()}] Server started:
-- Running on: http://localhost:${PORT}
-- Background Color: ${backgroundColor}
-- Hilltop Consultancy Contact: +45 7157 3047
-==========================
+    const banner = `
+================================================================
+  ✅  IF YOU SEE THIS LOG, THE WANDAPREP APP IS RUNNING!
+================================================================
+  Timestamp   : ${new Date().toISOString()}
+  Port        : ${PORT}
+  Environment : ${APP_ENV}
+  Color       : ${APP_COLOR}
+  Message     : ${APP_MESSAGE}
+  Secret Key  : ${SECRET_KEY}
+----------------------------------------------------------------
+  These values come from:
+    APP_COLOR   → ConfigMap  (wandaprep-config)
+    APP_ENV     → ConfigMap  (wandaprep-config)
+    APP_MESSAGE → ConfigMap  (wandaprep-config)
+    SECRET_KEY  → Secret     (wandaprep-secret)
+================================================================
 `;
-    console.log(startMessage);
-    logStream.write(startMessage + '\n');
+    log(banner);
 });

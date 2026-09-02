@@ -3,68 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Display App</title>
+    <title>WANDAPREP App</title>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: Arial, sans-serif;
-            background-color: {{COLOR}};
+            background-color: {{APP_COLOR}};
             color: white;
-            text-align: center;
-            margin: 0;
-            padding: 0;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            padding: 40px 20px;
         }
-        h1 {
-            font-size: 3em;
-            font-weight: bold;
+        h1 { font-size: 2.8em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2em; opacity: 0.85; margin-bottom: 40px; }
+        .card {
+            background: rgba(0,0,0,0.25);
+            border-radius: 12px;
+            padding: 30px 40px;
+            max-width: 600px;
+            width: 100%;
         }
-        p {
-            font-size: 1.5em;
-        }
-        .info {
-            margin-top: 20px;
-            font-size: 1.2em;
-        }
-        .date-time {
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-top: 15px;
-        }
+        .card h2 { font-size: 1.1em; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; margin-bottom: 20px; }
+        .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .row:last-child { border-bottom: none; }
+        .label { opacity: 0.75; font-size: 0.95em; }
+        .value { font-weight: bold; font-size: 0.95em; }
+        .source { font-size: 0.75em; opacity: 0.55; margin-top: 2px; }
+        .clock { margin-top: 30px; font-size: 1em; opacity: 0.7; }
     </style>
 </head>
 <body>
-    <h1>Welcome to the Color Display App</h1>
-    <p>The current background color is: <strong>{{COLOR}}</strong></p>
+    <h1>WANDAPREP</h1>
+    <p class="subtitle">Kubernetes Training Application</p>
 
-    <div class="info">
-        <p>Welcome to Hilltop Consultancy Color Display Application.</p>
-        <p>Address: Sylen 3, Høje Taastrup, Copenhagen</p>
-        <p>Website: <a href="https://www.htconsult.dk" target="_blank" style="color: white;">www.htconsult.dk</a></p>
-        <p>Contact: +45 7157 3047</p>
+    <div class="card">
+        <h2>Runtime Configuration</h2>
+
+        <div class="row">
+            <div>
+                <div class="label">Background Color</div>
+                <div class="source">from ConfigMap → APP_COLOR</div>
+            </div>
+            <div class="value">{{APP_COLOR}}</div>
+        </div>
+
+        <div class="row">
+            <div>
+                <div class="label">Environment</div>
+                <div class="source">from ConfigMap → APP_ENV</div>
+            </div>
+            <div class="value">{{APP_ENV}}</div>
+        </div>
+
+        <div class="row">
+            <div>
+                <div class="label">Message</div>
+                <div class="source">from ConfigMap → APP_MESSAGE</div>
+            </div>
+            <div class="value">{{APP_MESSAGE}}</div>
+        </div>
+
+        <div class="row">
+            <div>
+                <div class="label">Secret Key</div>
+                <div class="source">from Secret → SECRET_KEY</div>
+            </div>
+            <div class="value">{{SECRET_KEY}}</div>
+        </div>
     </div>
 
-    <div class="date-time">
-        <p>Today is: <span id="current-date"></span></p>
-    </div>
+    <div class="clock" id="clock"></div>
 
     <script>
-        // Get current date and time
-        function updateDateTime() {
-            const now = new Date();
-            const formattedDate = now.toLocaleString('en-US', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-            });
-            document.getElementById('current-date').textContent = formattedDate;
+        function tick() {
+            document.getElementById('clock').textContent = new Date().toLocaleString();
         }
-
-        // Update date and time every second
-        setInterval(updateDateTime, 1000);
-        updateDateTime(); // Initial call to display date immediately
+        setInterval(tick, 1000);
+        tick();
     </script>
 </body>
 </html>

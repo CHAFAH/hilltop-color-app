@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: multicolor-app
+  name: wandaprep-app
   labels:
-    name: multicolor-app
+    app: wandaprep
 spec:
   containers:
-  - name: multicolor-app-container
-    image: hilltopconsultancy/multicolor:greenv2.0
+  - name: wandaprep-app-container
+    image: chafah/wandaprep:v1.0
     ports:
-      - containerPort: 8080
+    - containerPort: 8080

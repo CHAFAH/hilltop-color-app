@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wandaprep-config
+data:
+  APP_COLOR: "blue"
+  APP_ENV: "production"
+  APP_MESSAGE: "Welcome to WANDAPREP Kubernetes Training!"

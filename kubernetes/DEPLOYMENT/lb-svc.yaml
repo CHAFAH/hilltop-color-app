@@ -1,10 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: multicolor-lb-svc
+  name: wandaprep-lb-svc
 spec:
   selector:
-    app: multicolor
+    app: wandaprep
   type: LoadBalancer
   ports:
   - name: tcp

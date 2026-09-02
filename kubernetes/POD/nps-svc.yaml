@@ -1,10 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: multicolor-app-svc
+  name: wandaprep-app-svc
 spec:
   selector:
-    name: multicolor-app
+    name: wandaprep-app
   type: NodePort
   ports:
   - name:  tcp
