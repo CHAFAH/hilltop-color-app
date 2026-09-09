@@ -41,15 +41,6 @@ spec:
         image: chafah/color-app:latest
         ports:
         - containerPort: 8080
-        env:
-        - name: APP_COLOR
-          value: "darkred"
-        - name: APP_ENV
-          value: "daemonset-demo"
-        - name: APP_MESSAGE
-          value: "One instance on every node — DaemonSet!"
-        - name: SECRET_KEY
-          value: "daemon-demo"
         resources:
           requests:
             cpu: "50m"

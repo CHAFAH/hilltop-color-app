@@ -5,9 +5,26 @@
 #   subject (user, group, or ServiceAccount) via a RoleBinding.
 #
 # USE CASE:
-#   color-app needs to read its own ConfigMap and Secret at runtime.
-#   This Role grants only the minimum permissions needed (get, list, watch)
-#   on those specific resources — principle of least privilege.
+#   Grant color-app-sa permission to read ConfigMaps and Secrets in the
+#   color-app namespace only. Nothing else. Principle of least privilege.
+#
+# APPLY ORDER:
+#   1. kubectl apply -f serviceaccount.yaml -n color-app
+#   2. kubectl apply -f role.yaml -n color-app
+#   3. kubectl apply -f rolebinding.yaml -n color-app
+#
+# TEST IF THE ROLE WORKS (kubectl auth can-i):
+#   # Should say "yes" — SA is allowed to get configmaps
+#   kubectl auth can-i get configmaps -n color-app --as=system:serviceaccount:color-app:color-app-sa
+#
+#   # Should say "yes" — SA is allowed to list pods
+#   kubectl auth can-i list pods -n color-app --as=system:serviceaccount:color-app:color-app-sa
+#
+#   # Should say "no" — SA cannot delete pods (not in the role)
+#   kubectl auth can-i delete pods -n color-app --as=system:serviceaccount:color-app:color-app-sa
+#
+#   # Should say "no" — SA has no permissions in other namespaces
+#   kubectl auth can-i get configmaps -n default --as=system:serviceaccount:color-app:color-app-sa
 #
 # USEFUL COMMANDS:
 #   kubectl apply -f role.yaml -n color-app

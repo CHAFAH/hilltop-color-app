@@ -3,12 +3,12 @@
 #   A ReplicaSet ensures a specified number of identical Pod replicas are
 #   running at all times. If a Pod crashes, the ReplicaSet creates a new one.
 #   In practice you rarely create ReplicaSets directly — a Deployment manages
-#   them for you and adds rolling update and rollback on top.
+#   them for you and adds rolling updates and rollbacks on top.
 #
 # USE CASE:
 #   Taught in class to show what sits underneath a Deployment. Understanding
-#   ReplicaSets helps explain why deleting a Pod managed by a Deployment
-#   immediately creates a new one — the ReplicaSet reconciles the desired state.
+#   ReplicaSets explains why deleting a Pod managed by a Deployment immediately
+#   creates a new one — the ReplicaSet reconciles the desired state.
 #
 # USEFUL COMMANDS:
 #   kubectl apply -f replicaset.yaml -n color-app
@@ -38,15 +38,6 @@ spec:
         image: chafah/color-app:latest
         ports:
         - containerPort: 8080
-        env:
-        - name: APP_COLOR
-          value: "orange"
-        - name: APP_ENV
-          value: "dev"
-        - name: APP_MESSAGE
-          value: "Managed by a ReplicaSet!"
-        - name: SECRET_KEY
-          value: "replicaset-demo"
         resources:
           requests:
             cpu: "100m"

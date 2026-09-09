@@ -1,14 +1,29 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # WHAT IS A CLUSTERROLE?
-#   A ClusterRole is like a Role but cluster-wide — it is not scoped to a
-#   namespace. Use it for resources that exist at the cluster level (nodes,
-#   namespaces, persistent volumes) or when the same permissions are needed
-#   across all namespaces.
+#   A ClusterRole is like a Role but cluster-wide — not scoped to a namespace.
+#   Use it for resources that exist at the cluster level (nodes, namespaces,
+#   persistent volumes) or when the same permissions are needed across all
+#   namespaces.
 #
 # USE CASE:
-#   A monitoring tool (e.g. Prometheus) needs to scrape metrics from Pods
-#   across all namespaces and read node information. A ClusterRole grants
-#   this without creating a Role in every namespace.
+#   A monitoring tool needs to list Pods across ALL namespaces and read node
+#   info. A ClusterRole grants this once — no need to create a Role in every
+#   namespace.
+#
+# APPLY ORDER:
+#   1. kubectl apply -f serviceaccount.yaml -n color-app
+#   2. kubectl apply -f clusterrole.yaml
+#   3. kubectl apply -f clusterrolebinding.yaml
+#
+# TEST IF THE CLUSTERROLE WORKS:
+#   # Should say "yes" — allowed to list pods in any namespace
+#   kubectl auth can-i list pods -n kube-system --as=system:serviceaccount:color-app:color-app-sa
+#
+#   # Should say "yes" — allowed to list nodes (cluster-level resource)
+#   kubectl auth can-i list nodes --as=system:serviceaccount:color-app:color-app-sa
+#
+#   # Should say "no" — delete is not in the ClusterRole
+#   kubectl auth can-i delete nodes --as=system:serviceaccount:color-app:color-app-sa
 #
 # USEFUL COMMANDS:
 #   kubectl apply -f clusterrole.yaml
