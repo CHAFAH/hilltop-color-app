@@ -1,7 +1,7 @@
-region              = "us-east-1"
-environment         = "prod"
-cluster_name        = "landmark-cluster"
-kubernetes_version  = "1.32"
+region             = "us-east-1"
+environment        = "prod"
+cluster_name       = "color-app-cluster"
+kubernetes_version = "1.32"
 
 # VPC
 vpc_cidr             = "10.2.0.0/16"
@@ -16,10 +16,4 @@ node_min_size       = 3
 node_max_size       = 10
 
 # S3
-app_bucket_name = "landmark-app-bucket"
-
-# RDS
-db_name           = "employees"
-db_username       = "landmark_admin"
-db_password       = "ChangeMe123!"
-db_instance_class = "db.t3.medium"
+app_bucket_name = "color-app-bucket"

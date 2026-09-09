@@ -62,28 +62,3 @@ variable "app_bucket_name" {
   description = "S3 bucket for application use"
   type        = string
 }
-
-variable "db_name" {
-  description = "Database name"
-  type        = string
-  default     = "employees"
-}
-
-variable "db_username" {
-  description = "Master database username"
-  type        = string
-  default     = "landmark_admin"
-}
-
-variable "db_password" {
-  description = "Master database password"
-  type        = string
-  sensitive   = true
-}
-
-variable "db_instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t3.micro"
-}
-

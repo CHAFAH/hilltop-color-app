@@ -1,6 +1,6 @@
 # ECR repository for backend image
 resource "aws_ecr_repository" "backend" {
-  name                 = "employee-backend"
+  name                 = "color-app-backend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -9,14 +9,14 @@ resource "aws_ecr_repository" "backend" {
   }
 
   tags = {
-    Name        = "employee-backend"
+    Name        = "color-app-backend"
     Environment = var.environment
   }
 }
 
 # ECR repository for frontend image
 resource "aws_ecr_repository" "frontend" {
-  name                 = "employee-frontend"
+  name                 = "color-app-frontend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -25,7 +25,7 @@ resource "aws_ecr_repository" "frontend" {
   }
 
   tags = {
-    Name        = "employee-frontend"
+    Name        = "color-app-frontend"
     Environment = var.environment
   }
 }
