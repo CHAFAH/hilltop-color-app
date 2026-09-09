@@ -1,19 +1,44 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # WHAT IS A LOADBALANCER SERVICE?
-#   LoadBalancer provisions an external cloud load balancer (AWS ELB, GCP LB)
-#   and assigns it a public IP or DNS name. Traffic is forwarded from the
-#   load balancer to the matching Pods.
+#   LoadBalancer provisions a cloud load balancer (AWS NLB/ELB) and assigns
+#   it a public DNS name. Traffic flows: Internet → LB → Pods.
+#   Each LoadBalancer service creates its own cloud LB (costs money per service).
 #
 # USE CASE:
-#   You want to expose color-app to the internet on EKS without setting up
-#   an Ingress. The AWS Load Balancer Controller will provision a Network
-#   Load Balancer automatically when this Service is applied.
+#   Expose color-app directly to the internet on EKS with one command.
+#   Good for a single service. For multiple services, use Ingress instead
+#   (one ALB for all services).
+#
+# HOW TO DEMO:
+#   kubectl apply -f loadbalancer-svc.yaml -n color-app
+#
+#   # Watch until EXTERNAL-IP is assigned (takes ~1 min on EKS):
+#   kubectl get svc color-app-lb-svc -n color-app -w
+#
+#   # Once EXTERNAL-IP appears, open it in your browser:
+#   http://<EXTERNAL-IP>
+#
+#   # Or curl it:
+#   curl http://<EXTERNAL-IP>/health
 #
 # USEFUL COMMANDS:
-#   kubectl apply -f loadbalancer-svc.yaml -n color-app
 #   kubectl get svc color-app-lb-svc -n color-app
-#   # Wait for EXTERNAL-IP to be assigned, then open it in your browser
+#   kubectl describe svc color-app-lb-svc -n color-app
 # ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Pod
+metadata:
+  name: color-app-lb-pod
+  namespace: color-app
+  labels:
+    app: color-app
+spec:
+  containers:
+  - name: color-app
+    image: chafah/color-app:latest
+    ports:
+    - containerPort: 8080
+---
 apiVersion: v1
 kind: Service
 metadata:
