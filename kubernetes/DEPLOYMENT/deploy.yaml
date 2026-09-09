@@ -71,21 +71,6 @@ spec:
               name: color-app-secret
               key: AWS_SECRET_ACCESS_KEY
 
-        # ── Health probes ─────────────────────────────────────────────────────
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 15
-
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 10
-
         # ── Resources ─────────────────────────────────────────────────────────
         resources:
           requests:
