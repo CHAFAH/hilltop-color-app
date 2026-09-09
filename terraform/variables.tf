@@ -1,29 +1,89 @@
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, stg, prod)"
+  type        = string
+}
+
 variable "cluster_name" {
-  description = "Name of the EKS cluster"
+  description = "EKS cluster name"
   type        = string
-  default     = "eks-wandaprep-prod"
-}
-
-variable "cluster_version" {
-  description = "EKS cluster version"
-  type        = string
-  default     = "1.31"
-}
-
-variable "ami_release_version" {
-  description = "Default EKS AMI release version for node groups"
-  type        = string
-  default     = "1.31.0-20241121"
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
+  description = "VPC CIDR block"
   type        = string
-  default     = "10.42.0.0/16"
 }
 
-variable "aws_region" {
-  description = "AWS region to deploy into"
-  type        = string
-  default     = "us-east-1"
+variable "availability_zones" {
+  description = "List of availability zones"
+  type        = list(string)
 }
+
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for private subnets"
+  type        = list(string)
+}
+
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets"
+  type        = list(string)
+}
+
+variable "node_instance_types" {
+  description = "Instance types for EKS node group"
+  type        = list(string)
+}
+
+variable "node_desired_size" {
+  description = "Desired number of nodes"
+  type        = number
+}
+
+variable "node_min_size" {
+  description = "Minimum number of nodes"
+  type        = number
+}
+
+variable "node_max_size" {
+  description = "Maximum number of nodes"
+  type        = number
+}
+
+variable "kubernetes_version" {
+  description = "Kubernetes version"
+  type        = string
+}
+
+variable "app_bucket_name" {
+  description = "S3 bucket for application use"
+  type        = string
+}
+
+variable "db_name" {
+  description = "Database name"
+  type        = string
+  default     = "employees"
+}
+
+variable "db_username" {
+  description = "Master database username"
+  type        = string
+  default     = "landmark_admin"
+}
+
+variable "db_password" {
+  description = "Master database password"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
