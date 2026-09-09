@@ -2,6 +2,7 @@
 
 # Terraform
 .terraform/
+terraform/.helm/
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
