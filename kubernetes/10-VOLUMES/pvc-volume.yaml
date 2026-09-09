@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A PVC VOLUME?
+#   A PersistentVolumeClaim (PVC) requests durable storage from the cluster.
+#   When mounted into a Pod, data written to that path survives Pod restarts
+#   and rescheduling (unlike emptyDir which is wiped when the Pod dies).
+#
+# USE CASE:
+#   color-app writes logs to /usr/src/app/logs. Without a PVC those logs
+#   disappear when the Pod restarts. Mounting a PVC there persists the logs
+#   across restarts and makes them available to other Pods that mount the
+#   same PVC (ReadWriteMany) or for backup.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f pvc-volume.yaml -n color-app
+#   kubectl get pvc -n color-app
+#   kubectl describe pvc color-app-logs-pvc -n color-app
+#   kubectl exec -it color-app-pvc-vol -n color-app -- ls /usr/src/app/logs
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: color-app-logs-pvc
+  namespace: color-app
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: gp2
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: color-app-pvc-vol
+  namespace: color-app
+  labels:
+    app: color-app
+spec:
+  containers:
+  - name: color-app
+    image: chafah/color-app:latest
+    ports:
+    - containerPort: 8080
+    env:
+    - name: APP_COLOR
+      value: "navy"
+    - name: APP_ENV
+      value: "pvc-demo"
+    - name: APP_MESSAGE
+      value: "Logs persisted to a PVC!"
+    - name: SECRET_KEY
+      value: "pvc-demo"
+    volumeMounts:
+    - name: logs-storage
+      mountPath: /usr/src/app/logs
+  volumes:
+  - name: logs-storage
+    persistentVolumeClaim:
+      claimName: color-app-logs-pvc

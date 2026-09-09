@@ -1,0 +1,99 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A DEPLOYMENT?
+#   A Deployment manages a ReplicaSet and ensures a desired number of Pod
+#   replicas are always running. It handles rolling updates and rollbacks
+#   automatically — if you push a bad image, you can roll back with one command.
+#
+# USE CASE:
+#   Run 3 replicas of color-app so the app stays available if a node goes down.
+#   When you push a new image tag, the Deployment rolls it out one Pod at a
+#   time with zero downtime, then lets you roll back if something breaks.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f deploy.yaml -n color-app
+#   kubectl get deployments -n color-app
+#   kubectl rollout status deployment/color-app-deployment -n color-app
+#   kubectl rollout history deployment/color-app-deployment -n color-app
+#   kubectl rollout undo deployment/color-app-deployment -n color-app
+#   kubectl scale deployment color-app-deployment --replicas=5 -n color-app
+#   kubectl set image deployment/color-app-deployment color-app=chafah/color-app:v2.0 -n color-app
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: color-app-deployment
+  namespace: color-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: color-app
+  template:
+    metadata:
+      labels:
+        app: color-app
+    spec:
+      serviceAccountName: color-app-sa
+      containers:
+      - name: color-app
+        image: chafah/color-app:latest
+        ports:
+        - containerPort: 8080
+
+        # ── From ConfigMap ────────────────────────────────────────────────────
+        env:
+        - name: APP_COLOR
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: APP_COLOR
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: APP_ENV
+        - name: APP_MESSAGE
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: APP_MESSAGE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: LOG_LEVEL
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: AWS_REGION
+        - name: LOG_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: LOG_GROUP
+
+        # ── From Secret ───────────────────────────────────────────────────────
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: color-app-secret
+              key: SECRET_KEY
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: color-app-secret
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: color-app-secret
+              key: AWS_SECRET_ACCESS_KEY
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"

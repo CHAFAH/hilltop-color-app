@@ -1,0 +1,29 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A HEADLESS SERVICE?
+#   A Headless Service has clusterIP: None. Instead of a single virtual IP,
+#   DNS returns the individual Pod IPs directly. This lets clients discover
+#   and connect to specific Pods rather than being load-balanced.
+#
+# USE CASE:
+#   StatefulSets (databases, message queues) need clients to connect to a
+#   specific Pod (e.g. the primary replica). A headless service gives each
+#   Pod a stable DNS entry: <pod-name>.<svc-name>.<namespace>.svc.cluster.local
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f headless-svc.yaml -n color-app
+#   kubectl get svc color-app-headless-svc -n color-app
+#   # From inside a pod: nslookup color-app-headless-svc.color-app.svc.cluster.local
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: color-app-headless-svc
+  namespace: color-app
+spec:
+  selector:
+    app: color-app
+  clusterIP: None
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080

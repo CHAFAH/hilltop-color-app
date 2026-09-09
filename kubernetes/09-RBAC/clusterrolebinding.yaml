@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A CLUSTERROLEBINDING?
+#   A ClusterRoleBinding attaches a ClusterRole to a subject cluster-wide.
+#   The subject gets the permissions in every namespace and on cluster-level
+#   resources.
+#
+# USE CASE:
+#   Bind color-app-cluster-reader to color-app-sa so a monitoring sidecar
+#   running as that ServiceAccount can list Pods and nodes across the whole
+#   cluster without needing a RoleBinding in every namespace.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f clusterrolebinding.yaml
+#   kubectl get clusterrolebinding color-app-cluster-rolebinding
+#   kubectl describe clusterrolebinding color-app-cluster-rolebinding
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: color-app-cluster-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: color-app-sa
+  namespace: color-app
+roleRef:
+  kind: ClusterRole
+  name: color-app-cluster-reader
+  apiGroup: rbac.authorization.k8s.io

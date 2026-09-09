@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A ROLEBINDING?
+#   A RoleBinding attaches a Role to a subject (ServiceAccount, user or group)
+#   within a namespace. It is the glue between "what permissions exist" (Role)
+#   and "who gets them" (subject).
+#
+# USE CASE:
+#   Bind color-app-role to color-app-sa so the color-app Pod can read
+#   its ConfigMap and Secret via the Kubernetes API.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f rolebinding.yaml -n color-app
+#   kubectl get rolebinding -n color-app
+#   kubectl describe rolebinding color-app-rolebinding -n color-app
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: color-app-rolebinding
+  namespace: color-app
+subjects:
+- kind: ServiceAccount
+  name: color-app-sa
+  namespace: color-app
+roleRef:
+  kind: Role
+  name: color-app-role
+  apiGroup: rbac.authorization.k8s.io

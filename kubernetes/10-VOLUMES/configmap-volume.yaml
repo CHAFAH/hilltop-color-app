@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A CONFIGMAP VOLUME?
+#   Instead of injecting ConfigMap values as environment variables, you can
+#   mount them as files inside the container. Each key becomes a file and
+#   the value becomes the file content. The app reads the file at runtime.
+#
+# USE CASE:
+#   Some apps (nginx, Java Spring) expect configuration as files, not env vars.
+#   Mounting a ConfigMap as a volume lets you inject an entire config file
+#   (e.g. app.properties, nginx.conf) without baking it into the image.
+#   When the ConfigMap is updated, the mounted file updates automatically
+#   (within ~60 seconds) without restarting the Pod.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f configmap-volume.yaml -n color-app
+#   kubectl exec -it color-app-configmap-vol -n color-app -- sh
+#   # Inside the pod:
+#   cat /usr/src/app/config/app.properties
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: color-app-file-config
+  namespace: color-app
+data:
+  app.properties: |
+    APP_COLOR=purple
+    APP_ENV=production
+    APP_MESSAGE=Loaded from a mounted config file!
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: color-app-configmap-vol
+  namespace: color-app
+  labels:
+    app: color-app
+spec:
+  containers:
+  - name: color-app
+    image: chafah/color-app:latest
+    ports:
+    - containerPort: 8080
+    env:
+    - name: APP_COLOR
+      value: "purple"
+    - name: APP_ENV
+      value: "volume-demo"
+    - name: APP_MESSAGE
+      value: "Config mounted as a file!"
+    - name: SECRET_KEY
+      value: "vol-demo"
+    volumeMounts:
+    - name: config-volume
+      mountPath: /usr/src/app/config
+      readOnly: true
+  volumes:
+  - name: config-volume
+    configMap:
+      name: color-app-file-config

@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A CONFIGMAP?
+#   A ConfigMap stores non-sensitive configuration data as key-value pairs.
+#   Pods consume ConfigMaps as environment variables or mounted files.
+#   Changing a ConfigMap does not require rebuilding the container image.
+#
+# USE CASE:
+#   color-app reads APP_COLOR, APP_ENV and APP_MESSAGE at startup.
+#   By changing the ConfigMap you can switch the background color from
+#   blue to red without touching the image — great for demonstrating
+#   how config is decoupled from code in Kubernetes.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f configmap.yaml -n color-app
+#   kubectl get configmap color-app-config -n color-app
+#   kubectl describe configmap color-app-config -n color-app
+#   # Edit live and watch the app pick up the change:
+#   kubectl edit configmap color-app-config -n color-app
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: color-app-config
+  namespace: color-app
+data:
+  APP_COLOR: "blue"
+  APP_ENV: "production"
+  APP_MESSAGE: "Welcome to the color-app Kubernetes Training!"
+  LOG_LEVEL: "info"
+  AWS_REGION: "us-east-1"
+  LOG_GROUP: "/color-app"

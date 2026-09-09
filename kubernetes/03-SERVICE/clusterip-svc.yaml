@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A SERVICE?
+#   A Service gives a stable DNS name and IP address to a group of Pods
+#   selected by a label. Without a Service, Pods are only reachable by their
+#   ephemeral IP which changes every time a Pod restarts.
+#
+# SERVICE TYPES:
+#   ClusterIP   — internal only, reachable within the cluster (default)
+#   NodePort    — exposes the service on every node's IP at a static port
+#   LoadBalancer— provisions a cloud load balancer (AWS ELB, etc.)
+#   Headless    — no cluster IP, returns Pod IPs directly (used by StatefulSets)
+#
+# USE CASE (ClusterIP):
+#   Other services inside the cluster (e.g. an API gateway) need to reach
+#   color-app by a stable name. ClusterIP gives them
+#   http://color-app-clusterip-svc:80 without exposing it externally.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f clusterip-svc.yaml -n color-app
+#   kubectl get svc -n color-app
+#   kubectl describe svc color-app-clusterip-svc -n color-app
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: color-app-clusterip-svc
+  namespace: color-app
+spec:
+  selector:
+    app: color-app
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080

@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS AN INGRESS?
+#   An Ingress is an API object that manages external HTTP/HTTPS access to
+#   services inside the cluster. It acts as a smart router — one load balancer
+#   can route to many services based on hostname or path rules.
+#   An Ingress Controller (e.g. AWS Load Balancer Controller) must be running
+#   to process Ingress resources.
+#
+# USE CASE:
+#   Instead of creating a separate LoadBalancer Service for every app, one
+#   ALB handles all traffic. Requests to app.color-app.com go to color-app.
+#   This saves cost (one ALB vs many) and centralises TLS termination.
+#
+# PREREQUISITES:
+#   - AWS Load Balancer Controller installed (done by Terraform helm.tf)
+#   - Subnets tagged with kubernetes.io/role/elb=1 (done by Terraform)
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f ingress.yaml -n color-app
+#   kubectl get ingress -n color-app
+#   kubectl describe ingress color-app-ingress -n color-app
+#   # ADDRESS column shows the ALB DNS once provisioned (1-2 min)
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: color-app-ingress
+  namespace: color-app
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  rules:
+  - host: app.color-app.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: color-app-clusterip-svc
+            port:
+              number: 80

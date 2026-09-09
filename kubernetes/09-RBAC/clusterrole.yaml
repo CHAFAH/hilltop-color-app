@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A CLUSTERROLE?
+#   A ClusterRole is like a Role but cluster-wide — it is not scoped to a
+#   namespace. Use it for resources that exist at the cluster level (nodes,
+#   namespaces, persistent volumes) or when the same permissions are needed
+#   across all namespaces.
+#
+# USE CASE:
+#   A monitoring tool (e.g. Prometheus) needs to scrape metrics from Pods
+#   across all namespaces and read node information. A ClusterRole grants
+#   this without creating a Role in every namespace.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f clusterrole.yaml
+#   kubectl get clusterrole color-app-cluster-reader
+#   kubectl describe clusterrole color-app-cluster-reader
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: color-app-cluster-reader
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "namespaces", "pods", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets"]
+  verbs: ["get", "list", "watch"]

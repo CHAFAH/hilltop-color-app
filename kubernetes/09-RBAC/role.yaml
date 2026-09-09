@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A ROLE?
+#   A Role defines a set of permissions (verbs on resources) scoped to a
+#   single namespace. It does nothing on its own — it must be bound to a
+#   subject (user, group, or ServiceAccount) via a RoleBinding.
+#
+# USE CASE:
+#   color-app needs to read its own ConfigMap and Secret at runtime.
+#   This Role grants only the minimum permissions needed (get, list, watch)
+#   on those specific resources — principle of least privilege.
+#
+# USEFUL COMMANDS:
+#   kubectl apply -f role.yaml -n color-app
+#   kubectl get role -n color-app
+#   kubectl describe role color-app-role -n color-app
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: color-app-role
+  namespace: color-app
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
