@@ -203,8 +203,7 @@ resource "aws_iam_policy" "ecr_access" {
           "ecr:ListImages"
         ]
         Resource = [
-          aws_ecr_repository.backend.arn,
-          aws_ecr_repository.frontend.arn
+          aws_ecr_repository.app.arn
         ]
       },
       {

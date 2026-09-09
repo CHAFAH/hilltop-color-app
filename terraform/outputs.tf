@@ -24,11 +24,7 @@ output "kubeconfig_command" {
   value = "aws eks update-kubeconfig --name ${var.cluster_name}-${var.environment} --region ${var.region} --profile terraform"
 }
 
-# ECR outputs
-output "ecr_backend_url" {
-  value = aws_ecr_repository.backend.repository_url
-}
-
-output "ecr_frontend_url" {
-  value = aws_ecr_repository.frontend.repository_url
+# ECR output
+output "ecr_app_url" {
+  value = aws_ecr_repository.app.repository_url
 }
