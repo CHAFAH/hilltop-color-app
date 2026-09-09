@@ -2,18 +2,16 @@
 terraform {
   required_version = ">= 1.5.0"
 
-  backend "s3" {
-    bucket       = "landmark-terraform-state-file-075120018043"
-    key          = "eks/terraform.tfstate"
-    region       = "us-east-1"
-    profile      = "terraform"
-    use_lockfile = true
-  }
+  backend "local" {}
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.12"
     }
   }
 }
@@ -21,5 +19,18 @@ terraform {
 # AWS provider
 provider "aws" {
   region  = var.region
-  profile = "terraform"
+  profile = "production"
+}
+
+# Helm provider — uses EKS cluster credentials
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--profile", "production"]
+    }
+  }
 }

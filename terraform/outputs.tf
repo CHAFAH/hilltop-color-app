@@ -21,7 +21,7 @@ output "lb_controller_role_arn" {
 }
 
 output "kubeconfig_command" {
-  value = "aws eks update-kubeconfig --name ${var.cluster_name}-${var.environment} --region ${var.region} --profile terraform"
+  value = "aws eks update-kubeconfig --name ${var.cluster_name}-${var.environment} --region ${var.region} --profile production"
 }
 
 # ECR output
