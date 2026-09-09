@@ -5,14 +5,13 @@
 #   and storage. Every container in a Pod can talk to each other via localhost.
 #
 # USE CASE:
-#   You want to run a single instance of the color-app to test it quickly
-#   without setting up a full Deployment. Pods are also used in class to
-#   demonstrate how containers get an IP, how env vars are injected, and
-#   how kubectl exec works.
+#   Run a single instance of color-app to explore how Pods work — get an IP,
+#   exec into the container, read logs, and delete it. The app has a built-in
+#   default color (red) so no env vars are needed at this stage.
 #
 # USEFUL COMMANDS:
 #   kubectl apply -f pod.yaml -n color-app
-#   kubectl get pods -n color-app
+#   kubectl get pods -n color-app -o wide
 #   kubectl describe pod color-app-pod -n color-app
 #   kubectl logs color-app-pod -n color-app
 #   kubectl exec -it color-app-pod -n color-app -- sh
@@ -31,12 +30,3 @@ spec:
     image: chafah/color-app:latest
     ports:
     - containerPort: 8080
-    env:
-    - name: APP_COLOR
-      value: "green"
-    - name: APP_ENV
-      value: "dev"
-    - name: APP_MESSAGE
-      value: "Running as a bare Pod!"
-    - name: SECRET_KEY
-      value: "pod-demo"

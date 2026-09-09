@@ -39,57 +39,15 @@ spec:
         image: chafah/color-app:latest
         ports:
         - containerPort: 8080
-
-        # ── From ConfigMap ────────────────────────────────────────────────────
+        envFrom:
+        - configMapRef:
+            name: color-app-config
         env:
-        - name: APP_COLOR
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: APP_COLOR
-        - name: APP_ENV
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: APP_ENV
-        - name: APP_MESSAGE
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: APP_MESSAGE
-        - name: LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: LOG_LEVEL
-        - name: AWS_REGION
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: AWS_REGION
-        - name: LOG_GROUP
-          valueFrom:
-            configMapKeyRef:
-              name: color-app-config
-              key: LOG_GROUP
-
-        # ── From Secret ───────────────────────────────────────────────────────
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: color-app-secret
               key: SECRET_KEY
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: color-app-secret
-              key: AWS_ACCESS_KEY_ID
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: color-app-secret
-              key: AWS_SECRET_ACCESS_KEY
-
         resources:
           requests:
             cpu: "100m"
