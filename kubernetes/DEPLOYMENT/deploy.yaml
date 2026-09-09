@@ -1,43 +1,92 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wandaprep-deployment
+  name: color-app-deployment
+  namespace: color-app
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: wandaprep
+      app: color-app
   template:
     metadata:
       labels:
-        app: wandaprep
+        app: color-app
     spec:
+      serviceAccountName: app-sa  # IRSA — grants CloudWatch + ECR access without static credentials
       containers:
-      - name: wandaprep-container
-        image: chafah/wandaprep:v1.0
+      - name: color-app
+        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/color-app:latest
         ports:
         - containerPort: 8080
+
+        # ── Environment from ConfigMap ────────────────────────────────────────
         env:
         - name: APP_COLOR
           valueFrom:
             configMapKeyRef:
-              name: wandaprep-config
+              name: color-app-config
               key: APP_COLOR
         - name: APP_ENV
           valueFrom:
             configMapKeyRef:
-              name: wandaprep-config
+              name: color-app-config
               key: APP_ENV
         - name: APP_MESSAGE
           valueFrom:
             configMapKeyRef:
-              name: wandaprep-config
+              name: color-app-config
               key: APP_MESSAGE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: LOG_LEVEL
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: AWS_REGION
+        - name: LOG_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: color-app-config
+              key: LOG_GROUP
+
+        # ── Environment from Secret ───────────────────────────────────────────
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: wandaprep-secret
+              name: color-app-secret
               key: SECRET_KEY
+        # Only needed when NOT using IRSA — comment out on EKS with IRSA
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: color-app-secret
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: color-app-secret
+              key: AWS_SECRET_ACCESS_KEY
+
+        # ── Health probes ─────────────────────────────────────────────────────
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 15
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        # ── Resources ─────────────────────────────────────────────────────────
         resources:
           requests:
             cpu: "100m"
