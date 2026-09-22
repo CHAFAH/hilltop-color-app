@@ -1,4 +1,34 @@
 # ─────────────────────────────────────────────────────────────────────────────
+# WHAT IS A VOLUME?
+#
+#   By default, a container's filesystem is ephemeral — when the container
+#   crashes or the pod is deleted, all data written inside it is lost.
+#
+#   A Volume solves this by mounting a storage location into the container.
+#   The volume is defined at the POD level (not the container level) and
+#   then mounted into one or more containers inside that pod.
+#
+#   Two-step pattern used in every volume type:
+#
+#     spec:
+#       containers:
+#       - name: my-app
+#         volumeMounts:          # STEP 2 — mount it into the container
+#         - name: my-vol
+#           mountPath: /data
+#       volumes:                 # STEP 1 — define the volume on the pod
+#       - name: my-vol
+#         emptyDir: {}           # ← the volume TYPE goes here
+#
+#   Volume types covered in this folder:
+#     01 - emptyDir      → temporary, dies with the pod
+#     02 - hostPath      → node disk, survives pod delete (node-local)
+#     03 - configMap     → config files mounted read-only
+#     04 - secret        → secret files mounted in-memory
+#     05 - PVC           → durable EBS storage, survives everything
+#     06 - PVC + Pod     → full demo with persistence proof
+#
+# ─────────────────────────────────────────────────────────────────────────────
 # VOLUME TYPE 1: emptyDir
 #
 # WHAT IS IT?
