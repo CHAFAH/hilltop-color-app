@@ -28,7 +28,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "color-app.serviceAccountName" . }}
+      serviceAccountName: {{ include "color-app.serviceAccountName" . }}-sa
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -46,14 +46,15 @@ spec:
                 secretKeyRef:
                   name: {{ include "color-app.fullname" . }}-secret
                   key: SECRET_KEY
-          {{- with .Values.volumeMounts }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            - name: app-data
+              mountPath: /usr/src/app/data
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ include "color-app.fullname" . }}-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
