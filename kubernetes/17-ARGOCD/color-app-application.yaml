@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: color-app
+  namespace: argocd
+  # Finalizer ensures ArgoCD cleans up all managed resources when this
+  # Application is deleted — prevents orphaned Deployments and Services
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/CHAFAH/hilltop-color-app.git
+    targetRevision: main
+    path: kubernetes/06-DEPLOYMENT
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: color-app
+
+  syncPolicy:
+    automated:
+      prune: true       # remove resources deleted from Git
+      selfHeal: true    # revert any manual kubectl changes back to Git state
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
