@@ -2,37 +2,22 @@
 
 ## What is Helm?
 
-Helm is the package manager for Kubernetes. It lets you define, install, and upgrade
-Kubernetes applications using a single unit called a **chart** — a collection of
-pre-templated YAML manifests bundled together with default values and metadata.
-
-Without Helm you apply every manifest file individually and track versions manually.
-With Helm you install an entire application (Deployments, Services, ConfigMaps, RBAC,
-etc.) with one command, pass in your own values to override defaults, and roll back
-to any previous release in seconds.
+Helm is the package manager for Kubernetes. Instead of managing 10 separate
+YAML files (Deployment, Service, ConfigMap, Secret, HPA, etc.) and applying
+them one by one, Helm bundles them into a single unit called a **chart**.
+A chart is a folder of templated Kubernetes manifests with a `values.yaml`
+file that controls every configurable value — image tag, replicas, namespace,
+resource limits — from one place.
 
 ### Core concepts
 
 | Term | What it means |
 |---|---|
-| **Chart** | A packaged Kubernetes application (like an apt/yum package) |
-| **Repository** | A remote index of charts (like apt sources or npm registry) |
-| **Release** | A running instance of a chart installed into a cluster |
-| **Values** | Key-value overrides you pass at install/upgrade time |
-| **Revision** | A numbered snapshot of a release — every install or upgrade creates one |
-
----
-
-## Why use Helm?
-
-- **One command installs everything** — no need to `kubectl apply` 10 files in order
-- **Versioned releases** — every change is tracked; roll back with one command
-- **Reusable templates** — the same chart deploys to dev, staging, and prod with
-  different values
-- **Community charts** — thousands of production-ready charts for common tools
-  (nginx, cert-manager, prometheus, external-secrets, etc.)
-- **Upgrade in place** — `helm upgrade` diffs the current release and applies only
-  what changed
+| **Chart** | A packaged Kubernetes application — a folder of templates + values |
+| **values.yaml** | The single file you edit to configure the chart for any environment |
+| **Release** | A named, running instance of a chart installed into the cluster |
+| **Revision** | A numbered snapshot — every install or upgrade creates a new one |
+| **Repository** | A remote index of pre-built charts (like npm or apt) |
 
 ---
 
@@ -51,7 +36,6 @@ scoop install helm
 ### Windows (manual)
 1. Download the latest release from https://github.com/helm/helm/releases
 2. Extract the zip and move `helm.exe` to a folder on your `PATH`
-   (e.g. `C:\Windows\System32`)
 
 ### macOS
 ```bash
@@ -63,7 +47,7 @@ brew install helm
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
 
-### Verify the installation
+### Verify
 ```bash
 helm version
 # helm.sh/helm/v3.x.x
@@ -71,185 +55,266 @@ helm version
 
 ---
 
-## Add a chart repository
+## Create a chart for color-app
 
-A repository is a remote index of charts. You add it once and then search or pull
-charts from it by name.
+`helm create` scaffolds a complete chart folder structure locally with all the
+files you need. You then go into each file and replace the generated defaults
+with your actual app configuration.
 
 ```bash
-# Syntax
-helm repo add <repo-name> <repo-url>
+# Navigate to the kubernetes folder in the repo
+cd hilltop-color-app/kubernetes/16-HELM
 
-# Example — add the External Secrets Operator repo
-helm repo add external-secrets https://charts.external-secrets.io
-
-# Example — add the AWS Load Balancer Controller repo
-helm repo add eks https://aws.github.io/eks-charts
-
-# Example — add the ingress-nginx repo
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-
-# Always update the local index after adding a repo
-helm repo update
+# Create the chart — this generates the full folder structure instantly
+helm create color-app
 ```
 
-### List all added repositories
-```bash
-helm repo list
+This produces the following structure:
+
 ```
-
-### Search for charts inside a repo
-```bash
-# Search by repo name
-helm search repo external-secrets
-
-# Search across all added repos
-helm search repo nginx
+color-app/
+├── Chart.yaml              # chart metadata — name, version, description
+├── values.yaml             # ALL configurable values live here — edit this first
+├── charts/                 # sub-chart dependencies (leave empty for now)
+├── .helmignore             # files to exclude from the packaged chart
+└── templates/
+    ├── deployment.yaml     # Deployment template
+    ├── service.yaml        # Service template
+    ├── serviceaccount.yaml # ServiceAccount template
+    ├── hpa.yaml            # HorizontalPodAutoscaler template
+    ├── ingress.yaml        # Ingress template
+    ├── configmap.yaml      # not generated — you add this manually
+    ├── secret.yaml         # not generated — you add this manually
+    ├── _helpers.tpl        # reusable template helpers (name, labels, etc.)
+    ├── NOTES.txt           # printed to the terminal after helm install
+    └── tests/
+        └── test-connection.yaml
 ```
 
 ---
 
-## Pull (download) a chart locally
+## What to edit after running helm create
 
-Pulling downloads the chart tarball to your machine so you can inspect it,
-customise values, and install from the local copy — giving you full control
-over what gets applied to the cluster.
+### 1. `Chart.yaml` — set the chart identity
 
-```bash
-# Syntax
-helm pull <repo-name>/<chart-name> --untar --destination <folder>
-
-# Example — pull the External Secrets Operator chart into a local folder
-helm pull external-secrets/external-secrets \
-  --untar \
-  --destination ./helm-charts
-
-# Example — pull a specific version
-helm pull external-secrets/external-secrets \
-  --version 0.9.11 \
-  --untar \
-  --destination ./helm-charts
+```yaml
+apiVersion: v2
+name: color-app
+description: Helm chart for the hilltop color-app
+type: application
+version: 0.1.0        # chart version — bump this on every change
+appVersion: "v1"      # the image tag being deployed
 ```
 
-After pulling, the folder structure looks like:
+### 2. `values.yaml` — the only file you change per environment
 
+Replace the generated defaults with color-app values:
+
+```yaml
+replicaCount: 3
+
+image:
+  repository: 075120018043.dkr.ecr.us-east-1.amazonaws.com/color-app
+  pullPolicy: IfNotPresent
+  tag: "v1"
+
+namespace: color-app
+
+serviceAccount:
+  create: true
+  name: color-app-sa
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+
+configmap:
+  APP_COLOR: "blue"
+  APP_ENV: "production"
+  APP_MESSAGE: "Hello from Helm!"
+
+secret:
+  SECRET_KEY: "bXktc2VjcmV0LWtleQ=="   # base64 encoded
 ```
-helm-charts/
-└── external-secrets/
-    ├── Chart.yaml          # chart metadata (name, version, description)
-    ├── values.yaml         # all default values — edit this to customise
-    ├── templates/          # the actual Kubernetes manifest templates
-    └── charts/             # sub-charts (dependencies)
+
+### 3. `templates/deployment.yaml` — wire up the configmap and secret
+
+The generated deployment does not know about your ConfigMap or Secret.
+Open the file and add `envFrom` and `env` under the container spec:
+
+```yaml
+envFrom:
+  - configMapRef:
+      name: {{ include "color-app.fullname" . }}-config
+env:
+  - name: SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: {{ include "color-app.fullname" . }}-secret
+        key: SECRET_KEY
 ```
 
-### Inspect default values before installing
-```bash
-# Print all configurable values for a chart
-helm show values external-secrets/external-secrets
+### 4. `templates/configmap.yaml` — create this file manually
 
-# Or read the pulled values file directly
-cat ./helm-charts/external-secrets/values.yaml
+`helm create` does not generate a ConfigMap. Create it yourself:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "color-app.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "color-app.labels" . | nindent 4 }}
+data:
+  APP_COLOR: {{ .Values.configmap.APP_COLOR | quote }}
+  APP_ENV: {{ .Values.configmap.APP_ENV | quote }}
+  APP_MESSAGE: {{ .Values.configmap.APP_MESSAGE | quote }}
+```
+
+### 5. `templates/secret.yaml` — create this file manually
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "color-app.fullname" . }}-secret
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "color-app.labels" . | nindent 4 }}
+type: Opaque
+data:
+  SECRET_KEY: {{ .Values.secret.SECRET_KEY }}
 ```
 
 ---
 
-## Install a chart
-
-Once you have reviewed the chart you install it as a named **release** into your cluster.
+## Validate the chart before installing
 
 ```bash
-# Syntax
-helm install <release-name> <chart-source> \
-  --namespace <namespace> \
+# Check the chart for syntax errors
+helm lint color-app/
+
+# Render all templates locally without touching the cluster
+# This lets you see the exact YAML that will be applied
+helm template color-app color-app/ --values color-app/values.yaml
+
+# Dry-run against the cluster — catches API validation errors too
+helm install color-app color-app/ \
+  --namespace color-app \
   --create-namespace \
-  --set key=value \
-  --values custom-values.yaml
-
-# Example — install from the remote repo
-helm install external-secrets external-secrets/external-secrets \
-  --namespace external-secrets \
-  --create-namespace
-
-# Example — install from the locally pulled chart folder
-helm install external-secrets ./helm-charts/external-secrets \
-  --namespace external-secrets \
-  --create-namespace
-
-# Example — install the AWS Load Balancer Controller with required values
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  --namespace kube-system \
-  --set clusterName=color-app-cluster-prod \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller
-```
-
-### Verify the release installed successfully
-```bash
-# List all releases in a namespace
-helm list -n external-secrets
-
-# Get the full status of a release
-helm status external-secrets -n external-secrets
-
-# Check the Kubernetes resources the release created
-kubectl get all -n external-secrets
+  --dry-run
 ```
 
 ---
 
-## Upgrade a release
+## Install the chart
 
-When a new chart version is available, or you want to change values, use
-`helm upgrade`. It creates a new revision and applies only the diff.
+Once you have edited the files and validated them:
 
 ```bash
-# Syntax
-helm upgrade <release-name> <chart-source> \
-  --namespace <namespace> \
-  --set key=newValue \
-  --values updated-values.yaml
-
-# Example — upgrade External Secrets to a newer chart version
-helm upgrade external-secrets external-secrets/external-secrets \
-  --namespace external-secrets
-
-# Example — upgrade and change a value at the same time
-helm upgrade external-secrets external-secrets/external-secrets \
-  --namespace external-secrets \
-  --set replicaCount=2
-
-# install-or-upgrade in one command (safe for CI/CD pipelines)
-helm upgrade --install external-secrets external-secrets/external-secrets \
-  --namespace external-secrets \
+helm install color-app color-app/ \
+  --namespace color-app \
   --create-namespace
 ```
 
-### Check revision history after an upgrade
+Verify the release:
+
 ```bash
-helm history external-secrets -n external-secrets
-# REVISION  STATUS      CHART                        DESCRIPTION
-# 1         superseded  external-secrets-0.9.10      Install complete
-# 2         deployed    external-secrets-0.9.11      Upgrade complete
+# List all Helm releases
+helm list -n color-app
+
+# Check the status of this release
+helm status color-app -n color-app
+
+# Check the resources it created
+kubectl get all -n color-app
 ```
 
 ---
 
-## Roll back a release
+## Override values per environment without editing values.yaml
+
+Create a separate values file for each environment and pass it at install time:
+
+```bash
+# values-prod.yaml
+image:
+  tag: "v2"
+replicaCount: 5
+configmap:
+  APP_ENV: "production"
+  APP_COLOR: "green"
+```
+
+```bash
+helm install color-app color-app/ \
+  --namespace color-app \
+  --create-namespace \
+  --values color-app/values-prod.yaml
+```
+
+---
+
+## Upgrade the release
+
+When you change `values.yaml` or bump the image tag:
+
+```bash
+# Edit values.yaml — e.g. change image.tag from v1 to v2
+# Then upgrade
+helm upgrade color-app color-app/ \
+  --namespace color-app
+
+# Or pass the new value inline without editing the file
+helm upgrade color-app color-app/ \
+  --namespace color-app \
+  --set image.tag=v2
+
+# Check the new revision was created
+helm history color-app -n color-app
+# REVISION  STATUS      CHART            DESCRIPTION
+# 1         superseded  color-app-0.1.0  Install complete
+# 2         deployed    color-app-0.1.0  Upgrade complete
+```
+
+---
+
+## Roll back
 
 ```bash
 # Roll back to the previous revision
-helm rollback external-secrets -n external-secrets
+helm rollback color-app -n color-app
 
-# Roll back to a specific revision number
-helm rollback external-secrets 1 -n external-secrets
+# Roll back to a specific revision
+helm rollback color-app 1 -n color-app
 ```
 
 ---
 
-## Uninstall a release
+## Uninstall
 
 ```bash
-helm uninstall external-secrets -n external-secrets
+helm uninstall color-app -n color-app
 ```
 
 ---
@@ -260,32 +325,34 @@ helm uninstall external-secrets -n external-secrets
 # 1. Install Helm
 choco install kubernetes-helm
 
-# 2. Add the chart repository
-helm repo add external-secrets https://charts.external-secrets.io
-helm repo update
+# 2. Scaffold the chart
+cd hilltop-color-app/kubernetes/16-HELM
+helm create color-app
 
-# 3. Pull the chart locally to inspect it
-helm pull external-secrets/external-secrets --untar --destination ./helm-charts
+# 3. Edit the generated files
+#    - Chart.yaml        → set name, version, appVersion
+#    - values.yaml       → set image, replicas, service, configmap, secret values
+#    - templates/        → wire up configmap + secret in deployment.yaml
+#    - templates/        → create configmap.yaml and secret.yaml manually
 
-# 4. Review and customise values
-cat ./helm-charts/external-secrets/values.yaml
+# 4. Validate
+helm lint color-app/
+helm template color-app color-app/ --values color-app/values.yaml
+helm install color-app color-app/ --namespace color-app --create-namespace --dry-run
 
-# 5. Install the release
-helm install external-secrets ./helm-charts/external-secrets \
-  --namespace external-secrets \
-  --create-namespace
+# 5. Install
+helm install color-app color-app/ --namespace color-app --create-namespace
 
 # 6. Verify
-helm list -n external-secrets
-kubectl get all -n external-secrets
+helm list -n color-app
+kubectl get all -n color-app
 
-# 7. Upgrade when needed
-helm upgrade external-secrets ./helm-charts/external-secrets \
-  --namespace external-secrets
+# 7. Upgrade (after changing values or image tag)
+helm upgrade color-app color-app/ --namespace color-app
 
 # 8. Check history
-helm history external-secrets -n external-secrets
+helm history color-app -n color-app
 
-# 9. Roll back if something breaks
-helm rollback external-secrets -n external-secrets
+# 9. Roll back if needed
+helm rollback color-app -n color-app
 ```
