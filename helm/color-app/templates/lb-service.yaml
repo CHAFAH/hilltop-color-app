@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "color-app.fullname" . }}-lb
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "color-app.labels" . | nindent 4 }}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: {{ .Values.lbService.annotations.type | quote }}
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: {{ .Values.lbService.annotations.targetType | quote }}
+    service.beta.kubernetes.io/aws-load-balancer-scheme: {{ .Values.lbService.annotations.scheme | quote }}
+spec:
+  type: LoadBalancer
+  selector:
+    {{- include "color-app.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .Values.lbService.port }}
+    targetPort: {{ .Values.lbService.targetPort }}
