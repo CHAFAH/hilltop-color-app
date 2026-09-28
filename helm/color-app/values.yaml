@@ -104,6 +104,16 @@ volume:
   storageClass: gp2
   size: 1Gi
 
+externalSecret:
+  region: us-east-1
+  serviceAccountName: eso-sa
+  refreshInterval: 1m
+  remoteKey: color-app/prod
+  keys:
+  - name: SECRET_KEY
+  - name: DB_PASSWORD
+  - name: API_KEY
+
 # Additional volumes on the output Deployment definition.
 volumes: []
 # - name: foo
