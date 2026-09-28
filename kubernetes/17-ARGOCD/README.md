@@ -282,9 +282,20 @@ An ArgoCD **Application** is a Kubernetes custom resource that tells ArgoCD:
 - which cluster and namespace to deploy into
 - how to sync (manual or automatic)
 
+The chart lives at `kubernetes/16-HELM/color-app` — the folder created by
+`helm create color-app`. ArgoCD uses Helm as the source type so it renders
+the templates through `values.yaml` before applying them to the cluster.
+
 ### Option A: Apply the Application manifest (recommended — GitOps for ArgoCD itself)
 
-Create the file `kubernetes/17-ARGOCD/color-app-application.yaml`:
+The file `kubernetes/17-ARGOCD/color-app-application.yaml` is already in the
+repo. Apply it:
+
+```bash
+kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
+```
+
+The manifest points ArgoCD at the Helm chart and sets `namespace: color-app`:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -292,7 +303,6 @@ kind: Application
 metadata:
   name: color-app
   namespace: argocd
-  # Finalizer ensures ArgoCD cleans up all resources when the Application is deleted
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -301,19 +311,27 @@ spec:
   source:
     repoURL: https://github.com/CHAFAH/hilltop-color-app.git
     targetRevision: main
-    # Path inside the repo that contains the manifests to deploy
-    path: kubernetes/06-DEPLOYMENT
+    path: kubernetes/16-HELM/color-app   # the helm create output folder
+    helm:
+      valueFiles:
+        - values.yaml                    # default values
+      # override individual values without editing values.yaml
+      parameters:
+        - name: image.tag
+          value: "v1"
+        - name: namespace
+          value: color-app
 
   destination:
-    server: https://kubernetes.default.svc   # in-cluster
+    server: https://kubernetes.default.svc
     namespace: color-app
 
   syncPolicy:
     automated:
-      prune: true        # delete resources removed from Git
-      selfHeal: true     # revert manual changes made directly in the cluster
+      prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true          # create color-app namespace if missing
+      - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
     retry:
@@ -324,21 +342,17 @@ spec:
         maxDuration: 3m
 ```
 
-Apply it:
-
-```bash
-kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
-```
-
 ### Option B: Create via CLI
 
 ```bash
 argocd app create color-app \
   --repo https://github.com/CHAFAH/hilltop-color-app.git \
-  --path kubernetes/06-DEPLOYMENT \
+  --path kubernetes/16-HELM/color-app \
   --dest-server https://kubernetes.default.svc \
   --dest-namespace color-app \
   --revision main \
+  --helm-set image.tag=v1 \
+  --helm-set namespace=color-app \
   --sync-policy automated \
   --auto-prune \
   --self-heal \
@@ -356,10 +370,11 @@ argocd app create color-app \
    - Check **Prune Resources** and **Self Heal**
    - Repository URL: `https://github.com/CHAFAH/hilltop-color-app.git`
    - Revision: `main`
-   - Path: `kubernetes/06-DEPLOYMENT`
+   - Path: `kubernetes/16-HELM/color-app`
    - Cluster URL: `https://kubernetes.default.svc`
    - Namespace: `color-app`
-4. Click **Create**
+4. Under **Helm** section set `image.tag=v1` and `namespace=color-app`
+5. Click **Create**
 
 ---
 
@@ -391,15 +406,17 @@ In the UI the Application card should show:
 ## Step 8 — Deploy a new version (the GitOps way)
 
 In a GitOps workflow you never run `kubectl set image` manually.
-You update the manifest in Git and ArgoCD picks it up.
+You update `values.yaml` in Git and ArgoCD re-renders the Helm chart and
+applies the diff to the cluster.
 
 ```bash
-# 1. Update the image tag in deploy.yaml
-#    Change: image: chafah/color-app:latest
-#    To:     image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/color-app:v2
+# 1. Edit values.yaml — bump the image tag
+#    kubernetes/16-HELM/color-app/values.yaml
+#    Change: tag: "v1"
+#    To:     tag: "v2"
 
 # 2. Commit and push
-git add kubernetes/06-DEPLOYMENT/deploy.yaml
+git add kubernetes/16-HELM/color-app/values.yaml
 git commit -m "Deploy color-app:v2 to production"
 git push origin main
 
@@ -536,7 +553,7 @@ kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
 argocd app wait color-app --sync
 kubectl get all -n color-app
 
-# 8. Deploy new version — update image tag in Git, then:
+# 8. Deploy new version — update image.tag in values.yaml, commit, push, then:
 argocd app sync color-app
 
 # 9. Roll back if needed

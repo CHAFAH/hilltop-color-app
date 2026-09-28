@@ -13,7 +13,16 @@ spec:
   source:
     repoURL: https://github.com/CHAFAH/hilltop-color-app.git
     targetRevision: main
-    path: kubernetes/06-DEPLOYMENT
+    # Points at the folder created by: helm create color-app
+    path: kubernetes/16-HELM/color-app
+    helm:
+      valueFiles:
+        - values.yaml          # rendered from kubernetes/16-HELM/color-app/values.yaml
+      parameters:
+        - name: image.tag
+          value: "v1"          # bump this to deploy a new version
+        - name: namespace
+          value: color-app
 
   destination:
     server: https://kubernetes.default.svc
