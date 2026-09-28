@@ -1,0 +1,28 @@
+namespace: staging
+
+replicaCount: 2
+
+image:
+  tag: "v1"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+configmap:
+  APP_COLOR: "yellow"
+  APP_ENV: "staging"
+  APP_MESSAGE: "Hello from Staging!"
+
+externalSecret:
+  remoteKey: color-app/stg

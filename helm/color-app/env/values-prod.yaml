@@ -1,0 +1,28 @@
+namespace: production
+
+replicaCount: 3
+
+image:
+  tag: "v1"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+
+configmap:
+  APP_COLOR: "blue"
+  APP_ENV: "production"
+  APP_MESSAGE: "Hello from Production!"
+
+externalSecret:
+  remoteKey: color-app/prod
