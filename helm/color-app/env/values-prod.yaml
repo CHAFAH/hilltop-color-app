@@ -5,7 +5,7 @@ replicaCount: 3
 image:
   repository: 075120018043.dkr.ecr.us-east-1.amazonaws.com/color-app
   pullPolicy: IfNotPresent
-  tag: "v1"
+  tag: "v2"
 
 imagePullSecrets: []
 nameOverride: ""
