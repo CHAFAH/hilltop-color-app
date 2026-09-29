@@ -45,7 +45,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 60
 
 configmap:
-  APP_COLOR: "green"
+  APP_COLOR: "purple"
   APP_ENV: "production"
   APP_MESSAGE: "Hello from Color-App Production! Deployed with Helm and External Secrets Operator"
 
