@@ -28,8 +28,6 @@ lbService:
     targetType: "ip"
     scheme: "internet-facing"
 
-ingress:
-  enabled: false
 
 resources:
   requests:
