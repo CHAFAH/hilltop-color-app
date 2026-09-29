@@ -5,8 +5,8 @@
 Helm is the package manager for Kubernetes. Instead of managing 10 separate
 YAML files (Deployment, Service, ConfigMap, Secret, HPA, etc.) and applying
 them one by one, Helm bundles them into a single unit called a **chart**.
-A chart is a folder of templated Kubernetes manifests with a `values.yaml`
-file that controls every configurable value — image tag, replicas, namespace,
+A chart is a folder of templated Kubernetes manifests driven by values files
+that control every configurable value — image tag, replicas, namespace,
 resource limits — from one place.
 
 ### Core concepts
@@ -14,7 +14,7 @@ resource limits — from one place.
 | Term | What it means |
 |---|---|
 | **Chart** | A packaged Kubernetes application — a folder of templates + values |
-| **values.yaml** | The single file you edit to configure the chart for any environment |
+| **Values file** | The file you pass per environment to configure the chart |
 | **Release** | A named, running instance of a chart installed into the cluster |
 | **Revision** | A numbered snapshot — every install or upgrade creates a new one |
 | **Repository** | A remote index of pre-built charts (like npm or apt) |
@@ -23,19 +23,10 @@ resource limits — from one place.
 
 ## Install Helm locally
 
-### Windows (Chocolatey) — recommended
+### Windows (Chocolatey)
 ```powershell
 choco install kubernetes-helm
 ```
-
-### Windows (Scoop)
-```powershell
-scoop install helm
-```
-
-### Windows (manual)
-1. Download the latest release from https://github.com/helm/helm/releases
-2. Extract the zip and move `helm.exe` to a folder on your `PATH`
 
 ### macOS
 ```bash
@@ -50,251 +41,202 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ### Verify
 ```bash
 helm version
-# helm.sh/helm/v3.x.x
 ```
 
 ---
 
-## Create a chart for color-app
+## Chart location
 
-`helm create` scaffolds a complete chart folder structure locally with all the
-files you need. You then go into each file and replace the generated defaults
-with your actual app configuration.
-
-```bash
-# Navigate to the kubernetes folder in the repo
-cd hilltop-color-app/kubernetes/16-HELM
-
-# Create the chart — this generates the full folder structure instantly
-helm create color-app
-```
-
-This produces the following structure:
+The chart lives at `helm/color-app/` at the repo root — **not** inside `kubernetes/16-HELM/`.
 
 ```
-color-app/
-├── Chart.yaml              # chart metadata — name, version, description
-├── values.yaml             # ALL configurable values live here — edit this first
-├── charts/                 # sub-chart dependencies (leave empty for now)
-├── .helmignore             # files to exclude from the packaged chart
-└── templates/
-    ├── deployment.yaml     # Deployment template
-    ├── service.yaml        # Service template
-    ├── serviceaccount.yaml # ServiceAccount template
-    ├── hpa.yaml            # HorizontalPodAutoscaler template
-    ├── ingress.yaml        # Ingress template
-    ├── configmap.yaml      # not generated — you add this manually
-    ├── secret.yaml         # not generated — you add this manually
-    ├── _helpers.tpl        # reusable template helpers (name, labels, etc.)
-    ├── NOTES.txt           # printed to the terminal after helm install
-    └── tests/
-        └── test-connection.yaml
+hilltop-color-app/
+└── helm/
+    └── color-app/
+        ├── Chart.yaml
+        ├── charts/
+        ├── templates/
+        │   ├── _helpers.tpl
+        │   ├── configmap.yaml
+        │   ├── deployment.yaml
+        │   ├── externalsecret.yaml
+        │   ├── hpa.yaml
+        │   ├── lb-service.yaml
+        │   ├── NOTES.txt
+        │   ├── pvc.yaml
+        │   ├── secretstore.yaml
+        │   └── serviceaccount.yaml
+        └── env/
+            ├── values-dev.yaml
+            ├── values-stg.yaml
+            └── values-prod.yaml
 ```
 
 ---
 
-## What to edit after running helm create
-
-### 1. `Chart.yaml` — set the chart identity
+## Chart.yaml
 
 ```yaml
 apiVersion: v2
 name: color-app
 description: Helm chart for the hilltop color-app
 type: application
-version: 0.1.0        # chart version — bump this on every change
-appVersion: "v1"      # the image tag being deployed
-```
-
-### 2. `values.yaml` — the only file you change per environment
-
-Replace the generated defaults with color-app values:
-
-```yaml
-replicaCount: 3
-
-image:
-  repository: 075120018043.dkr.ecr.us-east-1.amazonaws.com/color-app
-  pullPolicy: IfNotPresent
-  tag: "v1"
-
-namespace: color-app
-
-serviceAccount:
-  create: true
-  name: color-app-sa
-
-service:
-  type: LoadBalancer
-  port: 80
-  targetPort: 8080
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-
-resources:
-  requests:
-    cpu: "100m"
-    memory: "128Mi"
-  limits:
-    cpu: "250m"
-    memory: "256Mi"
-
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 60
-
-configmap:
-  APP_COLOR: "blue"
-  APP_ENV: "production"
-  APP_MESSAGE: "Hello from Helm!"
-
-secret:
-  SECRET_KEY: "bXktc2VjcmV0LWtleQ=="   # base64 encoded
-```
-
-### 3. `templates/deployment.yaml` — wire up the configmap and secret
-
-The generated deployment does not know about your ConfigMap or Secret.
-Open the file and add `envFrom` and `env` under the container spec:
-
-```yaml
-envFrom:
-  - configMapRef:
-      name: {{ include "color-app.fullname" . }}-config
-env:
-  - name: SECRET_KEY
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "color-app.fullname" . }}-secret
-        key: SECRET_KEY
-```
-
-### 4. `templates/configmap.yaml` — create this file manually
-
-`helm create` does not generate a ConfigMap. Create it yourself:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "color-app.fullname" . }}-config
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "color-app.labels" . | nindent 4 }}
-data:
-  APP_COLOR: {{ .Values.configmap.APP_COLOR | quote }}
-  APP_ENV: {{ .Values.configmap.APP_ENV | quote }}
-  APP_MESSAGE: {{ .Values.configmap.APP_MESSAGE | quote }}
-```
-
-### 5. `templates/secret.yaml` — create this file manually
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "color-app.fullname" . }}-secret
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "color-app.labels" . | nindent 4 }}
-type: Opaque
-data:
-  SECRET_KEY: {{ .Values.secret.SECRET_KEY }}
+version: 0.1.0
+appVersion: "v1"
 ```
 
 ---
 
-## Validate the chart before installing
+## Environment values files
+
+There is no root `values.yaml`. Each environment has its own fully self-contained
+values file under `helm/color-app/env/`. You must always pass one with `-f`.
+
+| File | Namespace | Replicas | Autoscaling | APP_COLOR | Secret path |
+|---|---|---|---|---|---|
+| `values-dev.yaml` | `develop` | 1 | disabled | green | `color-app/dev` |
+| `values-stg.yaml` | `staging` | 2 | enabled (max 5) | yellow | `color-app/stg` |
+| `values-prod.yaml` | `production` | 3 | enabled (max 10) | blue | `color-app/prod` |
+
+Key values in each file:
+
+```yaml
+namespace: production          # controls namespace for ALL resources
+
+image:
+  repository: 075120018043.dkr.ecr.us-east-1.amazonaws.com/color-app
+  tag: "v1"
+
+serviceAccount:
+  create: true
+  name: "color-app"
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::075120018043:role/color-app-eso-role
+
+externalSecret:
+  region: us-east-1
+  serviceAccountName: color-app-sa
+  refreshInterval: 1m
+  remoteKey: color-app/prod    # path in AWS Secrets Manager
+  keys:
+  - name: SECRET_KEY
+  - name: DB_PASSWORD
+  - name: API_KEY
+```
+
+---
+
+## Templates overview
+
+### Resources created (9 total)
+
+| Template | Resource | Name |
+|---|---|---|
+| `serviceaccount.yaml` | ServiceAccount | `color-app-sa` |
+| `configmap.yaml` | ConfigMap | `color-app-config` |
+| `secretstore.yaml` | SecretStore | `color-app-secret-store` |
+| `externalsecret.yaml` | ExternalSecret | `color-app-external-secret` |
+| `pvc.yaml` | PersistentVolumeClaim | `color-app-pvc` |
+| `lb-service.yaml` | Service (NLB) | `color-app-lb` |
+| `deployment.yaml` | Deployment | `color-app-deployment` |
+| `hpa.yaml` | HorizontalPodAutoscaler | `color-app-hpa` |
+
+> `ingress.yaml` and `secret.yaml` were deleted — ingress is not used,
+> secrets come exclusively from ESO.
+
+### Secrets — ESO is the source of truth
+
+There is no static Kubernetes `Secret` in this chart. Secrets are pulled from
+AWS Secrets Manager by the ExternalSecret and written into `color-app-secret`
+by the ESO controller:
+
+```
+AWS Secrets Manager (color-app/prod)
+        │  SECRET_KEY, DB_PASSWORD, API_KEY
+        ▼
+ExternalSecret → creates → color-app-secret (Kubernetes Secret)
+        ▼
+Deployment reads all 3 keys via secretKeyRef
+```
+
+The `color-app-sa` ServiceAccount has an IRSA annotation pointing at
+`color-app-eso-role` which has Secrets Manager read permissions.
+
+### Auto-rollout on any config change
+
+The deployment pod template includes checksums of all related objects.
+Whenever any of these change and you run `helm upgrade`, the checksum
+annotation changes → Kubernetes detects a pod spec diff → rolling restart
+triggers automatically:
+
+```yaml
+annotations:
+  checksum/config:      <sha256 of configmap.yaml>
+  checksum/secret:      <sha256 of externalsecret.yaml>
+  checksum/secretstore: <sha256 of secretstore.yaml>
+  checksum/pvc:         <sha256 of pvc.yaml>
+  checksum/sa:          <sha256 of serviceaccount.yaml>
+```
+
+---
+
+## Validate the chart
 
 ```bash
-# Check the chart for syntax errors
-helm lint color-app/
+cd hilltop-color-app/helm
 
-# Render all templates locally without touching the cluster
-# This lets you see the exact YAML that will be applied
-helm template color-app color-app/ --values color-app/values.yaml
+# Lint
+helm lint color-app/ -f color-app/env/values-prod.yaml
 
-# Dry-run against the cluster — catches API validation errors too
+# Render templates locally
+helm template color-app color-app/ -f color-app/env/values-prod.yaml
+
+# Dry-run against the cluster
 helm install color-app color-app/ \
-  --namespace color-app \
-  --create-namespace \
+  -f color-app/env/values-prod.yaml \
+  --namespace production \
   --dry-run
 ```
 
 ---
 
-## Install the chart
-
-Once you have edited the files and validated them:
+## Install
 
 ```bash
+cd hilltop-color-app/helm
+
 helm install color-app color-app/ \
-  --namespace color-app \
+  -f color-app/env/values-prod.yaml \
+  --namespace production \
   --create-namespace
 ```
 
-Verify the release:
+> The chart manages the namespace via `--create-namespace` — there is no
+> `namespace.yaml` template.
+
+Verify:
 
 ```bash
-# List all Helm releases
-helm list -n color-app
-
-# Check the status of this release
-helm status color-app -n color-app
-
-# Check the resources it created
-kubectl get all -n color-app
+helm list -n production
+kubectl get all -n production
+kubectl get externalsecret -n production
+kubectl get secret color-app-secret -n production
 ```
 
 ---
 
-## Override values per environment without editing values.yaml
-
-Create a separate values file for each environment and pass it at install time:
+## Upgrade
 
 ```bash
-# values-prod.yaml
-image:
-  tag: "v2"
-replicaCount: 5
-configmap:
-  APP_ENV: "production"
-  APP_COLOR: "green"
+helm upgrade color-app color-app/ \
+  -f color-app/env/values-prod.yaml \
+  --namespace production
 ```
 
-```bash
-helm install color-app color-app/ \
-  --namespace color-app \
-  --create-namespace \
-  --values color-app/values-prod.yaml
-```
-
----
-
-## Upgrade the release
-
-When you change `values.yaml` or bump the image tag:
+Check revision history:
 
 ```bash
-# Edit values.yaml — e.g. change image.tag from v1 to v2
-# Then upgrade
-helm upgrade color-app color-app/ \
-  --namespace color-app
-
-# Or pass the new value inline without editing the file
-helm upgrade color-app color-app/ \
-  --namespace color-app \
-  --set image.tag=v2
-
-# Check the new revision was created
-helm history color-app -n color-app
-# REVISION  STATUS      CHART            DESCRIPTION
-# 1         superseded  color-app-0.1.0  Install complete
-# 2         deployed    color-app-0.1.0  Upgrade complete
+helm history color-app -n production
 ```
 
 ---
@@ -302,11 +244,11 @@ helm history color-app -n color-app
 ## Roll back
 
 ```bash
-# Roll back to the previous revision
-helm rollback color-app -n color-app
+# Roll back to previous revision
+helm rollback color-app -n production
 
 # Roll back to a specific revision
-helm rollback color-app 1 -n color-app
+helm rollback color-app 1 -n production
 ```
 
 ---
@@ -314,7 +256,32 @@ helm rollback color-app 1 -n color-app
 ## Uninstall
 
 ```bash
-helm uninstall color-app -n color-app
+helm uninstall color-app -n production
+kubectl delete namespace production
+```
+
+---
+
+## Deploy per environment
+
+```bash
+# Dev
+helm install color-app color-app/ \
+  -f color-app/env/values-dev.yaml \
+  --namespace develop \
+  --create-namespace
+
+# Staging
+helm install color-app color-app/ \
+  -f color-app/env/values-stg.yaml \
+  --namespace staging \
+  --create-namespace
+
+# Production
+helm install color-app color-app/ \
+  -f color-app/env/values-prod.yaml \
+  --namespace production \
+  --create-namespace
 ```
 
 ---
@@ -325,34 +292,32 @@ helm uninstall color-app -n color-app
 # 1. Install Helm
 choco install kubernetes-helm
 
-# 2. Scaffold the chart
-cd hilltop-color-app/kubernetes/16-HELM
-helm create color-app
+# 2. Navigate to the helm folder
+cd hilltop-color-app/helm
 
-# 3. Edit the generated files
-#    - Chart.yaml        → set name, version, appVersion
-#    - values.yaml       → set image, replicas, service, configmap, secret values
-#    - templates/        → wire up configmap + secret in deployment.yaml
-#    - templates/        → create configmap.yaml and secret.yaml manually
+# 3. Validate
+helm lint color-app/ -f color-app/env/values-prod.yaml
+helm template color-app color-app/ -f color-app/env/values-prod.yaml --no-hooks
 
-# 4. Validate
-helm lint color-app/
-helm template color-app color-app/ --values color-app/values.yaml
-helm install color-app color-app/ --namespace color-app --create-namespace --dry-run
+# 4. Install
+helm install color-app color-app/ \
+  -f color-app/env/values-prod.yaml \
+  --namespace production \
+  --create-namespace
 
-# 5. Install
-helm install color-app color-app/ --namespace color-app --create-namespace
+# 5. Verify
+helm list -n production
+kubectl get all -n production
+kubectl get externalsecret -n production
 
-# 6. Verify
-helm list -n color-app
-kubectl get all -n color-app
+# 6. Upgrade after changes
+helm upgrade color-app color-app/ \
+  -f color-app/env/values-prod.yaml \
+  --namespace production
 
-# 7. Upgrade (after changing values or image tag)
-helm upgrade color-app color-app/ --namespace color-app
+# 7. Check history
+helm history color-app -n production
 
-# 8. Check history
-helm history color-app -n color-app
-
-# 9. Roll back if needed
-helm rollback color-app -n color-app
+# 8. Roll back if needed
+helm rollback color-app -n production
 ```

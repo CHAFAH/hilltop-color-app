@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: color-app
   namespace: argocd
-  # Finalizer ensures ArgoCD cleans up all managed resources when this
-  # Application is deleted — prevents orphaned Deployments and Services
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -13,25 +11,19 @@ spec:
   source:
     repoURL: https://github.com/CHAFAH/hilltop-color-app.git
     targetRevision: main
-    # Points at the folder created by: helm create color-app
-    path: kubernetes/16-HELM/color-app
+    path: helm/color-app
     helm:
       valueFiles:
-        - values.yaml          # rendered from kubernetes/16-HELM/color-app/values.yaml
-      parameters:
-        - name: image.tag
-          value: "v1"          # bump this to deploy a new version
-        - name: namespace
-          value: color-app
+        - env/values-prod.yaml
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: color-app
+    namespace: production
 
   syncPolicy:
     automated:
-      prune: true       # remove resources deleted from Git
-      selfHeal: true    # revert any manual kubectl changes back to Git state
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
