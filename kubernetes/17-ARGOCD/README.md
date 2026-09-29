@@ -1,20 +1,50 @@
 # ArgoCD
 
-## What is ArgoCD?
+## The problem with Helm alone
 
-ArgoCD is a declarative, GitOps-based continuous delivery tool for Kubernetes.
-It watches a Git repository and automatically reconciles the live cluster state
-with the desired state defined in that repo. If someone manually changes a
-resource in the cluster, ArgoCD detects the drift and can automatically revert
-it back to what Git says it should be.
+In the previous section (`16-HELM`) we built a Helm chart for color-app and
+learned how to install, upgrade, and roll back releases. Helm solved the
+problem of templating and packaging — but it still requires a human to run
+`helm upgrade` every time something changes.
 
-The core principle is: **Git is the single source of truth**. Every deployment,
-rollback, and config change is a Git commit — giving you a full audit trail,
-peer review via pull requests, and instant rollback by reverting a commit.
+Think about what that means in practice:
 
-### How ArgoCD fits into the pipeline
+- A developer merges a PR that bumps the image tag
+- Someone has to remember to run `helm upgrade` against the right cluster
+- If they forget, production is running old code
+- If someone runs `kubectl edit deployment` directly on the cluster, the
+  change is invisible — Helm has no idea it happened
+- There is no audit trail of who deployed what and when
+- Rolling back means finding the right revision number and running another command
+
+This is the **gap Helm leaves open** — it is a deployment tool, not a
+continuous delivery tool. It does not watch anything. It does not self-correct.
+It does not enforce that the cluster matches Git.
+
+## What ArgoCD adds on top of Helm
+
+ArgoCD sits inside the cluster and watches your Git repository continuously.
+When it detects that the desired state in Git differs from the live state in
+the cluster — whether because a new commit was pushed or because someone
+manually changed something — it acts.
 
 ```
+Without ArgoCD (Helm only)
+──────────────────────────
+Developer pushes code
+        │
+        ▼
+CI builds image → pushes to ECR
+        │
+        ▼
+  !! Someone must remember to run helm upgrade !!
+        │
+        ▼
+Cluster updated (maybe, if they remembered)
+
+
+With ArgoCD (Helm + GitOps)
+───────────────────────────
 Developer pushes code
         │
         ▼
@@ -24,14 +54,36 @@ CI builds image → pushes to ECR
 CI updates image.tag in helm/color-app/env/values-prod.yaml → commits to Git
         │
         ▼
-ArgoCD detects the change in Git
+ArgoCD detects the change in Git automatically
         │
         ▼
 ArgoCD runs helm template with the env values file → applies diff to EKS
         │
         ▼
-New pods roll out automatically — zero manual kubectl apply
+New pods roll out — zero manual intervention
 ```
+
+ArgoCD does not replace Helm. It uses Helm under the hood to render the
+templates — it just removes the human from the loop.
+
+| Problem with Helm alone | How ArgoCD solves it |
+|---|---|
+| Must remember to run `helm upgrade` | ArgoCD syncs automatically on every Git push |
+| No visibility into live vs desired state | UI shows exact diff between Git and cluster |
+| Manual `kubectl` changes go undetected | Drift is detected and auto-corrected (selfHeal) |
+| Rollback requires knowing revision numbers | Rollback = `git revert` — full history in Git |
+| No audit trail | Every change is a Git commit with author and timestamp |
+| Cluster credentials needed in CI pipeline | ArgoCD runs inside the cluster — no outbound secrets |
+
+## What is ArgoCD?
+
+ArgoCD is a declarative, GitOps-based continuous delivery tool for Kubernetes.
+It watches a Git repository and automatically reconciles the live cluster state
+with the desired state defined in that repo.
+
+The core principle is: **Git is the single source of truth**. Every deployment,
+rollback, and config change is a Git commit — giving you a full audit trail,
+peer review via pull requests, and instant rollback by reverting a commit.
 
 ### Core concepts
 
