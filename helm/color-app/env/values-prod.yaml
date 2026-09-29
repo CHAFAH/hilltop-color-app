@@ -48,8 +48,6 @@ configmap:
   APP_ENV: "production"
   APP_MESSAGE: "Hello from Production!"
 
-secret:
-  SECRET_KEY: "bXktc2VjcmV0LWtleQ=="
 
 volume:
   accessMode: ReadWriteOnce

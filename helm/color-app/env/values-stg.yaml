@@ -48,8 +48,6 @@ configmap:
   APP_ENV: "staging"
   APP_MESSAGE: "Hello from Staging!"
 
-secret:
-  SECRET_KEY: "bXktc2VjcmV0LWtleQ=="
 
 volume:
   accessMode: ReadWriteOnce

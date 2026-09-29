@@ -48,8 +48,6 @@ configmap:
   APP_ENV: "development"
   APP_MESSAGE: "Hello from Dev!"
 
-secret:
-  SECRET_KEY: "bXktc2VjcmV0LWtleQ=="
 
 volume:
   accessMode: ReadWriteOnce

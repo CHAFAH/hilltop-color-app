@@ -46,6 +46,16 @@ spec:
                 secretKeyRef:
                   name: {{ include "color-app.fullname" . }}-secret
                   key: SECRET_KEY
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "color-app.fullname" . }}-secret
+                  key: DB_PASSWORD
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "color-app.fullname" . }}-secret
+                  key: API_KEY
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
