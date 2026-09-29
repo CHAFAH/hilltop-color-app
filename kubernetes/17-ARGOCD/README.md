@@ -148,28 +148,56 @@ kubectl get svc argocd-server -n argocd
 
 ---
 
-## Step 5 — Connect the Git repository
+## Step 5 — Connect the Git repository (UI)
 
-```bash
-# Public repo
-argocd repo add https://github.com/CHAFAH/hilltop-color-app.git
-
-# Private repo (HTTPS token)
-argocd repo add https://github.com/CHAFAH/hilltop-color-app.git \
-  --username <github-username> \
-  --password <github-personal-access-token>
-
-# Verify
-argocd repo list
-```
+1. Click **Settings** (gear icon) in the left sidebar
+2. Click **Repositories**
+3. Click **+ Connect Repo**
+4. Fill in:
+   - Connection method: `HTTPS`
+   - Type: `git`
+   - Project: `default`
+   - Repository URL: `https://github.com/CHAFAH/hilltop-color-app.git`
+   - If private repo — add Username and Password (GitHub PAT)
+5. Click **Connect**
+6. Status should show **Successful** ✅
 
 ---
 
-## Step 6 — Deploy color-app with ArgoCD
+## Step 6 — Deploy color-app with ArgoCD (UI)
 
 The chart lives at `helm/color-app/` with environment-specific values files
 under `helm/color-app/env/`. The ArgoCD Application manifest is at
 `kubernetes/17-ARGOCD/color-app-application.yaml`.
+
+### Option A: Create via the UI
+
+1. Click **Applications** in the left sidebar
+2. Click **+ New App**
+3. Fill in the **General** section:
+   - Application Name: `color-app`
+   - Project Name: `default`
+   - Sync Policy: `Automatic`
+   - Check ✅ **Prune Resources**
+   - Check ✅ **Self Heal**
+4. Fill in the **Source** section:
+   - Repository URL: `https://github.com/CHAFAH/hilltop-color-app.git`
+   - Revision: `main`
+   - Path: `helm/color-app`
+   - Helm values files: `env/values-prod.yaml`
+5. Fill in the **Destination** section:
+   - Cluster URL: `https://kubernetes.default.svc`
+   - Namespace: `production`
+6. Under **Sync Options** check ✅ **Auto-Create Namespace**
+7. Click **Create**
+
+ArgoCD will immediately start syncing — the app card should turn green showing **Healthy** and **Synced**.
+
+### Option B: Apply the manifest directly
+
+```bash
+kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
+```
 
 ### Application manifest
 
@@ -210,28 +238,6 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
-```
-
-### Apply the manifest
-
-```bash
-kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
-```
-
-### Or create via CLI
-
-```bash
-argocd app create color-app \
-  --repo https://github.com/CHAFAH/hilltop-color-app.git \
-  --path helm/color-app \
-  --dest-server https://kubernetes.default.svc \
-  --dest-namespace production \
-  --revision main \
-  --helm-set-file values=helm/color-app/env/values-prod.yaml \
-  --sync-policy automated \
-  --auto-prune \
-  --self-heal \
-  --sync-option CreateNamespace=true
 ```
 
 ---
@@ -359,13 +365,11 @@ argocd login localhost:8080 --username admin --password <password> --insecure
 argocd account update-password
 kubectl delete secret argocd-initial-admin-secret -n argocd
 
-# 5. Connect the repo
-argocd repo add https://github.com/CHAFAH/hilltop-color-app.git
+# 5. Connect the repo and create the app via the UI
+#    Settings → Repositories → Connect Repo
+#    Applications → New App (see Step 5 and Step 6 above)
 
-# 6. Deploy color-app
-kubectl apply -f kubernetes/17-ARGOCD/color-app-application.yaml
-
-# 7. Watch it sync
+# 6. Watch it sync
 argocd app wait color-app --sync
 kubectl get all -n production
 
