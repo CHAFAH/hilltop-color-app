@@ -14,7 +14,8 @@ fullnameOverride: ""
 serviceAccount:
   create: true
   automount: true
-  annotations: {}
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::075120018043:role/color-app-eso-role
   name: "color-app"
 
 podAnnotations: {}
@@ -56,7 +57,7 @@ volume:
 
 externalSecret:
   region: us-east-1
-  serviceAccountName: eso-sa
+  serviceAccountName: color-app-sa
   refreshInterval: 1m
   remoteKey: color-app/stg
   keys:
