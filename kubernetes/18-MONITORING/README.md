@@ -156,7 +156,36 @@ kubectl get pods -n kube-system | grep metrics-server
 
 ---
 
-## Step 1 — Add the Prometheus community Helm repo
+## Step 1 — Install Metrics Server
+
+The Metrics Server is required for `kubectl top` commands and for the HPA to
+read CPU and memory metrics. Without it the HPA will show `unknown` targets
+and pods cannot autoscale.
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+Verify it is running:
+
+```bash
+kubectl get pods -n kube-system | grep metrics-server
+# metrics-server-xxx   1/1   Running
+
+kubectl get apiservice v1beta1.metrics.k8s.io
+# NAME                     AVAILABLE
+# v1beta1.metrics.k8s.io   True
+
+# Test it works
+kubectl top nodes
+kubectl top pods -n production
+```
+
+> Already installed on `color-app-cluster-prod` — skip if `v1beta1.metrics.k8s.io` shows `AVAILABLE: True`.
+
+---
+
+## Step 2 — Add the Prometheus community Helm repo
 
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -165,7 +194,7 @@ helm repo update
 
 ---
 
-## Step 2 — Create the monitoring namespace
+## Step 3 — Create the monitoring namespace
 
 ```bash
 kubectl create namespace monitoring
@@ -173,7 +202,7 @@ kubectl create namespace monitoring
 
 ---
 
-## Step 3 — Install kube-prometheus-stack
+## Step 4 — Install kube-prometheus-stack
 
 ```bash
 helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
@@ -203,7 +232,7 @@ kubectl get pods -n monitoring
 
 ---
 
-## Step 4 — Access Grafana
+## Step 5 — Access Grafana
 
 ### Option A: Port-forward (local access)
 
@@ -228,7 +257,7 @@ kubectl get svc kube-prometheus-stack-grafana -n monitoring
 
 ---
 
-## Step 5 — Import dashboards in Grafana
+## Step 6 — Import dashboards in Grafana
 
 Grafana has a library of pre-built dashboards. Import these by ID:
 
@@ -258,7 +287,7 @@ Grafana has a library of pre-built dashboards. Import these by ID:
 
 ---
 
-## Step 6 — Monitor color-app specifically
+## Step 7 — Monitor color-app specifically
 
 ### Check pod metrics
 
@@ -305,7 +334,7 @@ node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100
 
 ---
 
-## Step 7 — Set up an alert rule
+## Step 8 — Set up an alert rule
 
 Create an alert that fires when any pod in production restarts more than 3 times:
 
@@ -346,7 +375,7 @@ View alerts in Grafana → Alerting → Alert Rules.
 
 ---
 
-## Step 8 — Upgrade kube-prometheus-stack
+## Step 9 — Upgrade kube-prometheus-stack
 
 ```bash
 helm repo update
@@ -357,7 +386,7 @@ helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
 
 ---
 
-## Step 9 — Uninstall
+## Step 10 — Uninstall
 
 ```bash
 helm uninstall kube-prometheus-stack -n monitoring
@@ -369,14 +398,20 @@ kubectl delete namespace monitoring
 ## Full setup summary
 
 ```bash
-# 1. Add repo
+# 1. Install Metrics Server (skip if already installed)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl get apiservice v1beta1.metrics.k8s.io
+# NAME                     AVAILABLE
+# v1beta1.metrics.k8s.io   True
+
+# 2. Add repo
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-# 2. Create namespace
+# 3. Create namespace
 kubectl create namespace monitoring
 
-# 3. Install the stack
+# 4. Install the stack
 helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --set grafana.adminPassword=<your-password> \
